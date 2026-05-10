@@ -50,6 +50,9 @@ const scene = new THREE.Scene();
 scene.background = new THREE.Color(0x08080f);
 scene.fog = new THREE.FogExp2(0x08080f, 0.032);
 
+const lampGrp = new THREE.Group();
+scene.add(lampGrp);
+
 // ── Camera ────────────────────────────────────────────────────────────────────
 const cam = new THREE.PerspectiveCamera(38, innerWidth/innerHeight, 0.1, 80);
 cam.position.set(5, 5.5, 7);
@@ -99,7 +102,7 @@ function addMesh(geo, mat, { pos=[0,0,0], rot=[0,0,0], cast=true, recv=true } = 
   const m = new THREE.Mesh(geo, mat);
   m.position.set(...pos); m.rotation.set(...rot);
   m.castShadow = cast; m.receiveShadow = recv;
-  scene.add(m); return m;
+  lampGrp.add(m); return m;
 }
 // Cylinder spanning two Vector3 points
 function cylinder(a, b, rTop, rBot, mat, segs=20) {
@@ -110,7 +113,7 @@ function cylinder(a, b, rTop, rBot, mat, segs=20) {
   m.position.copy(mid);
   m.quaternion.setFromUnitVectors(UP, dir.normalize());
   m.castShadow = true; m.receiveShadow = true;
-  scene.add(m); return m;
+  lampGrp.add(m); return m;
 }
 function sphere(r, pos, mat, segs=32) {
   const m = new THREE.Mesh(new THREE.SphereGeometry(r, segs, segs), mat);
@@ -120,7 +123,7 @@ function sphere(r, pos, mat, segs=32) {
 function torus(r, tube, pos, rotX=Math.PI/2, mat=chrome) {
   const m = new THREE.Mesh(new THREE.TorusGeometry(r, tube, 14, 64), mat);
   m.position.set(...pos); m.rotation.x = rotX;
-  m.castShadow = true; scene.add(m); return m;
+  m.castShadow = true; lampGrp.add(m); return m;
 }
 
 // ── KEY POSITIONS ─────────────────────────────────────────────────────────────
@@ -145,7 +148,7 @@ for(let i=0;i<4;i++){
   const a = (i/4)*Math.PI*2 + Math.PI/4;
   const m = new THREE.Mesh(new THREE.CylinderGeometry(.04,.045,.012,16), rubber);
   m.position.set(Math.cos(a)*.62, .006, Math.sin(a)*.62);
-  scene.add(m);
+  lampGrp.add(m);
 }
 
 // Base post + pivot housing
@@ -155,9 +158,9 @@ torus(.10, .018, [P.pivot.x, P.pivot.y, P.pivot.z], Math.PI/2, chrome);
 
 // Power switch on base
 const sw = new THREE.Mesh(new THREE.CylinderGeometry(.022,.022,.025,16), dark);
-sw.position.set(.55,.115,.35); sw.rotation.x = Math.PI/2; scene.add(sw);
+sw.position.set(.55,.115,.35); sw.rotation.x = Math.PI/2; lampGrp.add(sw);
 const swBtn = new THREE.Mesh(new THREE.CylinderGeometry(.015,.015,.008,16), chrome);
-swBtn.position.set(.55,.115,.36); swBtn.rotation.x = Math.PI/2; scene.add(swBtn);
+swBtn.position.set(.55,.115,.36); swBtn.rotation.x = Math.PI/2; lampGrp.add(swBtn);
 
 // ── LOWER ARM ─────────────────────────────────────────────────────────────────
 cylinder(P.pivot, P.elbow, .026, .030, chrome);
@@ -175,7 +178,7 @@ for(let i=1;i<=10;i++){
   const ring = new THREE.Mesh(new THREE.TorusGeometry(.034,.007,8,20), dark);
   ring.position.copy(pos);
   ring.quaternion.setFromUnitVectors(UP, P.elbow.clone().sub(P.pivot).normalize());
-  ring.castShadow = true; scene.add(ring);
+  ring.castShadow = true; lampGrp.add(ring);
 }
 
 // ── ELBOW JOINT ───────────────────────────────────────────────────────────────
@@ -184,7 +187,7 @@ const elbowColDir = P.head.clone().sub(P.elbow).normalize();
 const elbowCol = new THREE.Mesh(new THREE.CylinderGeometry(.095,.095,.065,32), chrome);
 elbowCol.position.copy(P.elbow);
 elbowCol.quaternion.setFromUnitVectors(UP, elbowColDir);
-scene.add(elbowCol);
+lampGrp.add(elbowCol);
 
 // ── UPPER ARM ─────────────────────────────────────────────────────────────────
 cylinder(P.elbow, P.head, .023, .027, chrome);
@@ -196,7 +199,7 @@ for(let i=1;i<=8;i++){
   const ring = new THREE.Mesh(new THREE.TorusGeometry(.030,.006,8,20), dark);
   ring.position.copy(pos);
   ring.quaternion.setFromUnitVectors(UP, P.head.clone().sub(P.elbow).normalize());
-  ring.castShadow = true; scene.add(ring);
+  ring.castShadow = true; lampGrp.add(ring);
 }
 
 // ── HEAD JOINT ────────────────────────────────────────────────────────────────
@@ -205,7 +208,7 @@ const headColDir = P.neckEnd.clone().sub(P.head).normalize();
 const headCol = new THREE.Mesh(new THREE.CylinderGeometry(.085,.085,.055,32), chrome);
 headCol.position.copy(P.head);
 headCol.quaternion.setFromUnitVectors(UP, headColDir);
-scene.add(headCol);
+lampGrp.add(headCol);
 
 // ── NECK ──────────────────────────────────────────────────────────────────────
 cylinder(P.head, P.neckEnd, .019, .022, chrome);
@@ -216,7 +219,7 @@ shadeGrp.position.copy(P.neckEnd);
 // Tilt shade downward
 shadeGrp.rotation.z =  Math.PI * .14;
 shadeGrp.rotation.x = -Math.PI * .04;
-scene.add(shadeGrp);
+lampGrp.add(shadeGrp);
 
 // Outer cone
 const shadeOut = new THREE.Mesh(new THREE.CylinderGeometry(.48,.13,.60,64,1,true), shadeW);
@@ -292,7 +295,7 @@ const trailPts = [
 [cPts, trailPts].forEach(pts => {
   const crv = new THREE.CatmullRomCurve3(pts);
   const geo = new THREE.TubeGeometry(crv, 40, .012, 6, false);
-  const m = new THREE.Mesh(geo, rubber); m.castShadow = true; scene.add(m);
+  const m = new THREE.Mesh(geo, rubber); m.castShadow = true; lampGrp.add(m);
 });
 
 // ── DESK ──────────────────────────────────────────────────────────────────────
@@ -401,7 +404,7 @@ window.toggleLight = () => {
 };
 window.downloadSTL = () => {
   const exporter = new STLExporter();
-  const data = exporter.parse(scene, { binary: true });
+  const data = exporter.parse(lampGrp, { binary: true });
   const blob = new Blob([data], { type: 'application/octet-stream' });
   const a = document.createElement('a');
   a.href = URL.createObjectURL(blob);
