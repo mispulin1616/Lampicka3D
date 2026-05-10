@@ -21,6 +21,7 @@ canvas{display:block}
 <div id="ui">
   <button class="btn" id="lightBtn" onclick="toggleLight()">💡 Vypnout světlo</button>
   <button class="btn" onclick="resetCam()">🎯 Reset pohledu</button>
+  <button class="btn" onclick="downloadSTL()">📥 Stáhnout STL</button>
 </div>
 
 <script type="importmap">
@@ -32,6 +33,7 @@ canvas{display:block}
 <script type="module">
 import * as THREE from 'three';
 import { OrbitControls } from 'three/addons/controls/OrbitControls.js';
+import { STLExporter } from 'three/addons/exporters/STLExporter.js';
 
 // ── Renderer ──────────────────────────────────────────────────────────────────
 const renderer = new THREE.WebGLRenderer({ antialias: true });
@@ -396,6 +398,16 @@ window.toggleLight = () => {
   shadeI.emissiveIntensity = lightOn ? .45 : 0;
   poolMat.opacity    = lightOn ? .07 : 0;
   document.getElementById('lightBtn').textContent = lightOn ? '💡 Vypnout světlo' : '💡 Zapnout světlo';
+};
+window.downloadSTL = () => {
+  const exporter = new STLExporter();
+  const data = exporter.parse(scene, { binary: true });
+  const blob = new Blob([data], { type: 'application/octet-stream' });
+  const a = document.createElement('a');
+  a.href = URL.createObjectURL(blob);
+  a.download = 'lampicka.stl';
+  a.click();
+  URL.revokeObjectURL(a.href);
 };
 window.resetCam = () => {
   cam.position.set(5,5.5,7);
